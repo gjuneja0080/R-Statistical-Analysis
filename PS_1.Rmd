@@ -1,0 +1,172 @@
+---
+title: "Problem Set 1"
+author: "Gopal Juneja"
+date: "04/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+library(stargazer)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+## Question 1
+Suppose that you are asked to conduct a study to determine whether smaller class sizes lead to improved performance of students in Year 6. (fyi, "in schools in England Year 6 is the sixth year after Reception. It is the sixth full year of compulsory education, with children being admitted who are aged 10 before 1 September in any given academic year. It is also the final year of Key Stage 2 in which the National Curriculum is taught." source: Wikipedia)
+
+##### 1. Suppose you can collect observational data on several thousands of Year-6 students in England. You can obtain the size of their class and a standardized test score taken at the end of Year 6. Would you expect any correlation between class size and test score?
+
+It is possible for there to be a negative correlation between class size and test scores. This correlation could be justified by a myriad of reasons as teachers might be more efficient in identifying student needs, give more time to each student individually, as well as cover more material in class effectively. With less number of kids per class, there might be less chances of distrubances, hence study material might be covered faster, and more time might be spent on extra learning material which boosts test scores. However, this correlation may only have the plausibility of existence for Year-6 students. Higher education may show different outputs. 
+
+##### 2. Suppose you find a negative correlation between class size and test score. Does it necessarily indicate that smaller class sizes cause better performance? Explain.
+The first and second statements in the question specify two different concepts in statistics, namely, **Correlation** and **Causality**. While correlation means two or more variables changing simultaneously, in same of different directions, causality implies a relationship between two or more variables where one variable causes another variable to manifest. Without well designed empirical research including randomized controlled experiments and predictive models with multiple variables, It cannot be stated that smaller class sizes cause better performance. It can be stated that when class size is small, performance in students is high. 
+The reason for the above claim is that the relation being observed between smaller class sizes and better performance is being caused by a third variable, which could be the hidden cause of each variable independently.^[1] For instance, let better performance be denoted as 'y' and smaller class sizes be denoted as 'x'. Let the third variable be denoted as 'c'. Hypothetically, 'c' implies the number of teachers. If 'c' causes 'x' and 'c' causes 'y', then 'x' and 'y' may seem to be related in the form of causality, even though they're not. Controlling for 'c' using aforementioned experiments, would fade the relation between 'x' and 'y', as an higher number of teachers implies more teaching resources in a school. This might further imply that class sizes could become smaller to make best use of each of this resource at hand, and teachers help improve grades. Hence, it can be stated that it does not necessarily indicate that smaller class sizes cause better performance.
+
+```{r loadData, echo=FALSE}
+load("fertil2.RData")
+```
+Describing the data:
+```{r}
+desc
+```
+Giving a significant name instead of data:
+```{r}
+fertil2 <- data
+```
+## Question 2
+The data in fertil2.RData was collected on women living in the Republic of Botswana in 1988. The variable $children$ refers to the number of living children. The variable $electric$ is a binary indicator equal to one if the woman's home has electricity, and zero if not. The variable $heduc$ refers to the husband's years of education.
+
+#### 1. Find the smallest and largest values of children in the sample. What is the average of children? 
+
+<!-- Q2 p1 -->
+* Largest value of children in the sample is:
+```{r Q2part1}
+fertil2 %>% summarise(largestchild = max(children))
+```
+* Smallest value of children in the sample is:
+```{r Q2part1b}
+fertil2 %>% summarise(smallestchild = min(children))
+```
+* Average (also referred to as mean) of children is:
+```{r Q2part1c}
+fertil2 %>% summarise(average_age = mean(children))
+```
+
+<!-- Q2 p2 -->
+#### 2. Find the average of husband's years of education in the sample. How many observations are used to compute this average? Explain.
+The average of $heduc$ column or husband's years of education is **5.144683**.
+First, the average of husband's years of education is calculated from the main dataset which is **5.144683**. The rows where there exists no numeric value are ignored.  
+```{r Q2part2a}
+fertil2 %>% summarise(avg_heduc = mean(heduc, na.rm = TRUE))
+```
+Then the number of rows which do not have a numeric value for the $heduc$ column are counted, which comes out to be **2405**
+```{r Q2part2b}
+na_heduc <- sum(is.na(fertil2$heduc))
+```
+To verify the original results, the rows with existing numeric values for the $heduc$ column are extracted into a different table. The average of the $heduc$ is calculated in this new table, which also results in **5.144683**
+```{r Q2part2c}
+df_nonempty_heduc <- fertil2[-which(is.na(fertil2$heduc)),]
+df_nonempty_heduc %>% summarise(avg_heduc = mean(heduc, na.rm = TRUE))
+```
+If the number of rows are counted for this table, it turns out to be **1956**
+```{r Q2part2d}
+numRows_nonempty_heduc <- nrow(df_nonempty_heduc)
+numRows_nonempty_heduc
+```
+The count of rows is duble checked by subtracting the previous found na_heduc value from the original dataset's row count. 
+```{r Q2part2e}
+numRows_data <- nrow(fertil2)
+diff <- numRows_data - na_heduc
+diff
+```
+Hence, the number of observations used to compute this average are : **1956**
+
+#### 3. Create a graph to examine the relationship between $children$ and $heduc$. Comment.
+<!-- Q2 p3 -->
+Firstly, the column $heduc$ is relocated next to column $children$ to generate summary statistics of the two.  
+```{r Q2part3a}
+fertil2 <- fertil2 %>% relocate(heduc, .after = children)
+summary(fertil2[, 11:12])
+```
+
+The statistics show discrepancy between the mean and median of $heduc$, where median is greater than mean showing a left skewed distribution.This can be seen in the following histogram.  
+```{r Q2part3b}
+ggplot(data = fertil2, aes(x = heduc)) + geom_histogram()
+```
+
+Another detail to note is that approximately 75% of the values lie below **5**.  
+```{r Q2part3c}
+ggplot(data = fertil2, aes(x = children)) + geom_histogram()
+```
+
+Finally, the graphical investigation of the relationship between $children$ and $heduc$ is done via a scatter plot. To comprehend the trend better, a smoothing line is added.  
+
+```{r Q2part3d}
+f <- ggplot(fertil2, aes(x=children, y=heduc))
+f + geom_point() + geom_smooth()
+```
+
+The scatter plot indicates that higher number of year's in husband's education have lower number of children. The main issue with this plot is that there is a majority of rows in $heduc$ which are **missing**. This has a huge impact on the plots illustrated in the graphs associated with $heduc$.  
+
+<!-- Q2 p4 -->
+#### 4. What percentage of women have electricity in the home? 
+To calculate the percentage of women who have electricity in the home, the women who have electricity in their homes is filtered  which is stored separately. 
+```{r Q2part4a}
+women_with_electricity <- fertil2 %>% filter(electric == 1)
+count_wwe <- nrow(filter(fertil2, electric == 1))
+count_wwe
+```
+
+There were a total of **3 missing values**, which is less than 5%.^[2] So they are not considered. 
+
+```{r Q2part4b}
+na_electric <- sum(is.na(fertil2$electric))
+na_electric
+```
+Finally, the percentage of women with electricty is calculated by the equation: $percentelectric2 = (Women With Electricity/(Total Rows - Rows With Missing Electric Value)) * 100$. The answer is **14.02019%**.
+```{r Q2part4c}
+##The following is when you remove 3 na values from women who have electricity
+percent_electric2 <- (count_wwe/(numRows_data - na_electric)) * 100
+percent_electric2
+```
+
+<!-- Q2 p5 -->
+#### 5. Compute the average of children for those without electricity and do the same for those with electricity. Comment on what you find. 
+The average of children without electricity is **3.141931**
+```{r Q2part5a}
+children_without_electricity<-filter(fertil2, fertil2$children>0&fertil2$electric==0)
+mean(children_without_electricity$children)
+```
+
+The average of children with electricity is **2.577778**
+```{r Q2part5b}
+children_with_electricity<-filter(fertil2, fertil2$children>0&fertil2$electric==1)
+mean(children_with_electricity$children)
+```
+The average of children with electricity is less than average of children without electricity. After conducting a Two Sample t-test, following conclusions were made,
+The null hypothesis states that the true difference in means of children with electricity and children without electricity is zero. As t = 5.4204, which is substanitally higher than 1, and the p value is extremely small, the null hypothesis can be rejected. Therefore, there is a significant difference in means of children with electricity and children without electricity. To prevent the differences between means and heteroscedasticity leading to false positives, variance of both variables was assumed to be true. 
+The mean value also highlights the average number of children without electricity is more than average number of children with electricity.
+```{r Q2part5c}
+t.test(children_without_electricity$children, children_with_electricity$children, var.equal = TRUE)
+```
+<!-- Q2 p6 -->
+
+```{r Q2part6}
+model.1 <- lm(children ~ electric, data = fertil2)
+summary(model.1)
+stargazer(model.1, header = FALSE, type = 'text', title = "Question 3.6", align = TRUE)
+```
+
+There was an attempt to take the log of $children$ and then model using OLS, however quite a few rows resulted in negative infinity values ("-Inf")
+
+<!-- Q2 p7 -->
+#### 7. Does this simple regression necessarily capture a causal relationship between the number of children and the presence of electricity in the home? Explain.
+If R-squared is 1, then the regression perfectly maps out a causal relationship between the dependent and the explanatory variables. The R-squared in this regression accounts for 0.004499 percent of variablitity in children being explained by electric. If Adjusted R-squared is used instead, then this regression accounts for 0.004271 percent of variability in children being explained by electric. Therefore, there's no causal relationship between the number of children and the presence of electricity in the home, and this could be seen in the rounded Adjusted R-squared value of 0.004 showing that there is extremely poor goodness-of-fit. The Adjusted R-squared is focused on because it adjusts the statistic based on the number of independent variables in the model.
+
+
+
+## References
+
+1. *Foster et al. 2020. "Correlation versus Causation". Statistics LibreTexts. Available at: https://tinyurl.com/y4s8rllr*
+2. *2020. "Missing Values in Data". StatisticsSolutions. Available at:https://www.statisticssolutions.com/missing-values-in-data/*
